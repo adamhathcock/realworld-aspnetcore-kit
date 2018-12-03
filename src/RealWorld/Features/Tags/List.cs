@@ -1,8 +1,9 @@
-using System.Linq;
-using System.Threading.Tasks;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
 using RealWorld.Infrastructure;
+using System.Linq;
+using System.Threading;
+using System.Threading.Tasks;
 
 namespace RealWorld.Features.Tags
 {
@@ -12,7 +13,7 @@ namespace RealWorld.Features.Tags
         {
         }
 
-        public class QueryHandler : IAsyncRequestHandler<Query, TagsEnvelope>
+        public class QueryHandler : IRequestHandler<Query, TagsEnvelope>
         {
             private readonly RealWorldContext _context;
 
@@ -21,7 +22,7 @@ namespace RealWorld.Features.Tags
                 _context = context;
             }
 
-            public async Task<TagsEnvelope> Handle(Query message)
+            public async Task<TagsEnvelope> Handle(Query request, CancellationToken cancellationToken)
             {
                 var tags = await _context.Tags.OrderBy(x => x.TagId).AsNoTracking().ToListAsync();
                 return new TagsEnvelope()

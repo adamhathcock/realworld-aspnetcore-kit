@@ -1,5 +1,6 @@
 ﻿using System.Linq;
 using System.Net;
+using System.Threading;
 using System.Threading.Tasks;
 using AutoMapper;
 using FluentValidation;
@@ -42,7 +43,7 @@ namespace RealWorld.Features.Users
             }
         }
 
-        public class Handler : IAsyncRequestHandler<Command, UserEnvelope>
+        public class Handler : IRequestHandler<Command, UserEnvelope>
         {
             private readonly RealWorldContext _db;
             private readonly IPasswordHasher _passwordHasher;
@@ -54,8 +55,8 @@ namespace RealWorld.Features.Users
                 _passwordHasher = passwordHasher;
                 _jwtTokenGenerator = jwtTokenGenerator;
             }
-
-            public async Task<UserEnvelope> Handle(Command message)
+            
+            public async Task<UserEnvelope> Handle(Command message, CancellationToken cancellationToken)
             {
                 var person = await _db.Persons.Where(x => x.Email == message.User.Email).SingleOrDefaultAsync();
                 if (person == null)
@@ -67,8 +68,8 @@ namespace RealWorld.Features.Users
                 {
                     throw new RestException(HttpStatusCode.Unauthorized);
                 }
-             
-                var user  = Mapper.Map<Domain.Person, User>(person); ;
+
+                var user = Mapper.Map<Domain.Person, User>(person); ;
                 user.Token = await _jwtTokenGenerator.CreateToken(person.Username);
                 return new UserEnvelope(user);
             }

@@ -1,15 +1,14 @@
-using System;
-using System.Threading.Tasks;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using RealWorld.Infrastructure;
 using RealWorld.Infrastructure.Security;
+using System.Threading.Tasks;
 
 namespace RealWorld.Features.Users
 {
     [Route("user")]
-    [Authorize(ActiveAuthenticationSchemes = JwtIssuerOptions.Scheme)]
+    [Authorize(AuthenticationSchemes = JwtIssuerOptions.Scheme)]
     public class UserController
     {
         private readonly IMediator _mediator;

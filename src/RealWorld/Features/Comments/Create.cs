@@ -1,12 +1,13 @@
-﻿using System;
-using System.Net;
-using System.Threading.Tasks;
-using FluentValidation;
+﻿using FluentValidation;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
 using RealWorld.Domain;
 using RealWorld.Infrastructure;
 using RealWorld.Infrastructure.Errors;
+using System;
+using System.Net;
+using System.Threading;
+using System.Threading.Tasks;
 
 namespace RealWorld.Features.Comments
 {
@@ -40,7 +41,7 @@ namespace RealWorld.Features.Comments
             }
         }
 
-        public class Handler : IAsyncRequestHandler<Command, CommentEnvelope>
+        public class Handler : IRequestHandler<Command, CommentEnvelope>
         {
             private readonly RealWorldContext _db;
             private readonly ICurrentUserAccessor _currentUserAccessor;
@@ -51,31 +52,31 @@ namespace RealWorld.Features.Comments
                 _currentUserAccessor = currentUserAccessor;
             }
 
-            public async Task<CommentEnvelope> Handle(Command message)
+            public async Task<CommentEnvelope> Handle(Command message, CancellationToken cancellationToken)
             {
                 var article = await _db.Articles
                     .Include(x => x.Comments)
-                    .FirstOrDefaultAsync(x => x.Slug == message.Slug);
+                    .FirstOrDefaultAsync(x => x.Slug == message.Slug, cancellationToken);
 
                 if (article == null)
                 {
                     throw new RestException(HttpStatusCode.NotFound);
                 }
 
-                var author = await _db.Persons.FirstAsync(x => x.Username == _currentUserAccessor.GetCurrentUsername());
-                
-                var comment = new Comment()
+                var author = await _db.Persons.FirstAsync(x => x.Username == _currentUserAccessor.GetCurrentUsername(), cancellationToken);
+
+                var comment = new Comment
                 {
                     Author = author,
                     Body = message.Comment.Body,
                     CreatedAt = DateTime.UtcNow,
                     UpdatedAt = DateTime.UtcNow
                 };
-                await _db.Comments.AddAsync(comment);
+                await _db.Comments.AddAsync(comment, cancellationToken);
 
                 article.Comments.Add(comment);
 
-                await _db.SaveChangesAsync();
+                await _db.SaveChangesAsync(cancellationToken);
 
                 return new CommentEnvelope(comment);
             }

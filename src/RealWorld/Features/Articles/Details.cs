@@ -1,11 +1,11 @@
-using System.Linq;
-using System.Net;
-using System.Threading.Tasks;
 using FluentValidation;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
 using RealWorld.Infrastructure;
 using RealWorld.Infrastructure.Errors;
+using System.Net;
+using System.Threading;
+using System.Threading.Tasks;
 
 namespace RealWorld.Features.Articles
 {
@@ -29,7 +29,7 @@ namespace RealWorld.Features.Articles
             }
         }
 
-        public class QueryHandler : IAsyncRequestHandler<Query, ArticleEnvelope>
+        public class QueryHandler : IRequestHandler<Query, ArticleEnvelope>
         {
             private readonly RealWorldContext _context;
 
@@ -38,10 +38,10 @@ namespace RealWorld.Features.Articles
                 _context = context;
             }
 
-            public async Task<ArticleEnvelope> Handle(Query message)
+            public async Task<ArticleEnvelope> Handle(Query message, CancellationToken cancellationToken)
             {
                 var article = await _context.Articles.GetAllData()
-                    .FirstOrDefaultAsync(x => x.Slug == message.Slug);
+                    .FirstOrDefaultAsync(x => x.Slug == message.Slug, cancellationToken);
 
                 if (article == null)
                 {

@@ -1,12 +1,13 @@
-﻿using System;
-using System.Linq;
-using System.Net;
-using System.Threading.Tasks;
-using FluentValidation;
+﻿using FluentValidation;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
 using RealWorld.Infrastructure;
 using RealWorld.Infrastructure.Errors;
+using System;
+using System.Linq;
+using System.Net;
+using System.Threading;
+using System.Threading.Tasks;
 
 namespace RealWorld.Features.Articles
 {
@@ -35,7 +36,7 @@ namespace RealWorld.Features.Articles
             }
         }
 
-        public class Handler : IAsyncRequestHandler<Command, ArticleEnvelope>
+        public class Handler : IRequestHandler<Command, ArticleEnvelope>
         {
             private readonly RealWorldContext _db;
 
@@ -44,16 +45,13 @@ namespace RealWorld.Features.Articles
                 _db = db;
             }
 
-            public async Task<ArticleEnvelope> Handle(Command message)
+            public async Task<ArticleEnvelope> Handle(Command message, CancellationToken cancellationToken)
             {
                 var article = await _db.Articles
                     .Where(x => x.Slug == message.Slug)
-                    .FirstOrDefaultAsync();
+                    .FirstOrDefaultAsync(cancellationToken);
 
-                if (article == null)
-                {
-                    throw new RestException(HttpStatusCode.NotFound);
-                }
+                if (article == null) throw new RestException(HttpStatusCode.NotFound);
 
 
                 article.Description = message.Article.Description ?? article.Description;
@@ -61,15 +59,13 @@ namespace RealWorld.Features.Articles
                 article.Title = message.Article.Title ?? article.Title;
 
                 if (_db.ChangeTracker.Entries().First(x => x.Entity == article).State == EntityState.Modified)
-                {
                     article.UpdatedAt = DateTime.UtcNow;
-                }
-                
-                await _db.SaveChangesAsync();
+
+                await _db.SaveChangesAsync(cancellationToken);
 
                 return new ArticleEnvelope(await _db.Articles.GetAllData()
                     .Where(x => x.Slug == message.Slug)
-                    .FirstOrDefaultAsync());
+                    .FirstOrDefaultAsync(cancellationToken));
             }
         }
     }

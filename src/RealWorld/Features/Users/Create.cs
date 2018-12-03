@@ -1,8 +1,4 @@
-﻿using System;
-using System.Linq;
-using System.Net;
-using System.Threading.Tasks;
-using AutoMapper;
+﻿using AutoMapper;
 using FluentValidation;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
@@ -10,6 +6,11 @@ using RealWorld.Domain;
 using RealWorld.Infrastructure;
 using RealWorld.Infrastructure.Errors;
 using RealWorld.Infrastructure.Security;
+using System;
+using System.Linq;
+using System.Net;
+using System.Threading;
+using System.Threading.Tasks;
 
 namespace RealWorld.Features.Users
 {
@@ -47,7 +48,7 @@ namespace RealWorld.Features.Users
             }
         }
 
-        public class Handler : IAsyncRequestHandler<Command, UserEnvelope>
+        public class Handler : IRequestHandler<Command, UserEnvelope>
         {
             private readonly RealWorldContext _db;
             private readonly IPasswordHasher _passwordHasher;
@@ -58,7 +59,7 @@ namespace RealWorld.Features.Users
                 _passwordHasher = passwordHasher;
             }
 
-            public async Task<UserEnvelope> Handle(Command message)
+            public async Task<UserEnvelope> Handle(Command message, CancellationToken cancellationToken)
             {
                 if (await _db.Persons.Where(x => x.Username == message.User.Username).AnyAsync())
                 {

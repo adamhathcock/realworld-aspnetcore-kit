@@ -1,8 +1,8 @@
-﻿using System;
+﻿using Microsoft.AspNetCore.Http;
+using Newtonsoft.Json;
+using System;
 using System.Net;
 using System.Threading.Tasks;
-using Microsoft.AspNetCore.Http;
-using Newtonsoft.Json;
 
 namespace RealWorld.Infrastructure.Errors
 {
@@ -31,11 +31,11 @@ namespace RealWorld.Infrastructure.Errors
         {
             if (exception is RestException re)
             {
-                context.Response.StatusCode = (int)re.Code;
+                context.Response.StatusCode = (int) re.Code;
             }
             else
             {
-                context.Response.StatusCode = (int)HttpStatusCode.InternalServerError;
+                context.Response.StatusCode = (int) HttpStatusCode.InternalServerError;
                 if (!string.IsNullOrWhiteSpace(exception.Message))
                 {
                     context.Response.ContentType = "application/json";
@@ -46,7 +46,6 @@ namespace RealWorld.Infrastructure.Errors
                     await context.Response.WriteAsync(result);
                 }
             }
-
         }
     }
 }

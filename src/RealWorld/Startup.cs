@@ -1,4 +1,6 @@
-﻿using AutoMapper;
+﻿using System.Collections.Generic;
+using System.Linq;
+using AutoMapper;
 using FluentValidation.AspNetCore;
 using MediatR;
 using Microsoft.AspNetCore.Builder;
@@ -35,7 +37,17 @@ namespace RealWorld
                 x.SwaggerDoc("v1", new Info { Title = "RealWorld API", Version = "v1" });
                 x.CustomSchemaIds(y => y.FullName);
                 x.DocInclusionPredicate((version, apiDescription) => true);
-                x.TagActionsBy(y => y.GroupName);
+                x.AddSecurityDefinition("Bearer", new ApiKeyScheme
+                {
+                    Description = "JWT Authorization header using the Bearer scheme. Example: \"Authorization: Bearer {token}\"",
+                    Name = "Authorization",
+                    In = "header",
+                    Type = "apiKey"
+                });
+                x.AddSecurityRequirement(new Dictionary<string, IEnumerable<string>> {
+                    { "Bearer", Enumerable.Empty<string>() },
+                });
+
             });
 
             services.AddCors();
@@ -48,7 +60,10 @@ namespace RealWorld
                 {
                     opt.SerializerSettings.NullValueHandling = NullValueHandling.Ignore;
                 })
-                .AddFluentValidation(cfg => { cfg.RegisterValidatorsFromAssemblyContaining<Startup>(); });
+                .AddFluentValidation(cfg =>
+                {
+                    cfg.RegisterValidatorsFromAssemblyContaining<Startup>();
+                });
 
             services.AddAutoMapper();
 
@@ -60,6 +75,11 @@ namespace RealWorld
             
             services.AddJwt();
 
+            //Mapper.Initialize(cfg =>
+            //{
+            //    cfg.CreateMissingTypeMaps = true;
+            //    cfg.ValidateInlineMaps = false;
+            //});
             Mapper.AssertConfigurationIsValid();
         }
 
@@ -75,8 +95,6 @@ namespace RealWorld
                 .AllowAnyOrigin()
                 .AllowAnyHeader()
                 .AllowAnyMethod());
-
-            app.UseJwt();
 
             app.UseMvc();
 

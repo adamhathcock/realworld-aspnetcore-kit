@@ -1,9 +1,10 @@
-using System.Net;
-using System.Threading.Tasks;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
 using RealWorld.Infrastructure;
 using RealWorld.Infrastructure.Errors;
+using System.Net;
+using System.Threading;
+using System.Threading.Tasks;
 
 namespace RealWorld.Features.Comments
 {
@@ -19,7 +20,7 @@ namespace RealWorld.Features.Comments
             public string Slug { get; }
         }
 
-        public class QueryHandler : IAsyncRequestHandler<Query, CommentsEnvelope>
+        public class QueryHandler : IRequestHandler<Query, CommentsEnvelope>
         {
             private readonly RealWorldContext _context;
 
@@ -28,11 +29,11 @@ namespace RealWorld.Features.Comments
                 _context = context;
             }
 
-            public async Task<CommentsEnvelope> Handle(Query message)
+            public async Task<CommentsEnvelope> Handle(Query message, CancellationToken cancellationToken)
             {
                 var article = await _context.Articles
                     .Include(x => x.Comments)
-                    .FirstOrDefaultAsync(x => x.Slug == message.Slug);
+                    .FirstOrDefaultAsync(x => x.Slug == message.Slug, cancellationToken);
 
                 if (article == null)
                 {
