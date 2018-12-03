@@ -1,5 +1,3 @@
-using System.Net;
-using System.Threading.Tasks;
 using FluentValidation;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
@@ -7,6 +5,9 @@ using RealWorld.Domain;
 using RealWorld.Features.Articles;
 using RealWorld.Infrastructure;
 using RealWorld.Infrastructure.Errors;
+using System.Net;
+using System.Threading;
+using System.Threading.Tasks;
 
 namespace RealWorld.Features.Favorites
 {
@@ -26,11 +27,11 @@ namespace RealWorld.Features.Favorites
         {
             public CommandValidator()
             {
-                DefaultValidatorExtensions.NotNull(RuleFor(x => x.Slug)).NotEmpty();
+                RuleFor(x => x.Slug).NotNull().NotEmpty();
             }
         }
 
-        public class QueryHandler : IAsyncRequestHandler<Command, ArticleEnvelope>
+        public class QueryHandler : IRequestHandler<Command, ArticleEnvelope>
         {
             private readonly RealWorldContext _context;
             private readonly ICurrentUserAccessor _currentUserAccessor;
@@ -41,34 +42,35 @@ namespace RealWorld.Features.Favorites
                 _currentUserAccessor = currentUserAccessor;
             }
 
-            public async Task<ArticleEnvelope> Handle(Command message)
+            public async Task<ArticleEnvelope> Handle(Command message, CancellationToken cancellationToken)
             {
-                var article = await _context.Articles.FirstOrDefaultAsync(x => x.Slug == message.Slug);
+                var article =
+                    await _context.Articles.FirstOrDefaultAsync(x => x.Slug == message.Slug, cancellationToken);
 
-                if (article == null)
-                {
-                    throw new RestException(HttpStatusCode.NotFound);
-                }
-                
-                var person = await _context.Persons.FirstOrDefaultAsync(x => x.Username == _currentUserAccessor.GetCurrentUsername());
+                if (article == null) throw new RestException(HttpStatusCode.NotFound);
 
-                var favorite = await _context.ArticleFavorites.FirstOrDefaultAsync(x => x.ArticleId == article.ArticleId && x.PersonId == person.PersonId);
+                var person =
+                    await _context.Persons.FirstOrDefaultAsync(
+                        x => x.Username == _currentUserAccessor.GetCurrentUsername(), cancellationToken);
+
+                var favorite = await _context.ArticleFavorites.FirstOrDefaultAsync(
+                    x => x.ArticleId == article.ArticleId && x.PersonId == person.PersonId, cancellationToken);
 
                 if (favorite == null)
                 {
-                    favorite = new ArticleFavorite()
+                    favorite = new ArticleFavorite
                     {
                         Article = article,
                         ArticleId = article.ArticleId,
                         Person = person,
                         PersonId = person.PersonId
                     };
-                    await _context.ArticleFavorites.AddAsync(favorite);
-                    await _context.SaveChangesAsync();
+                    await _context.ArticleFavorites.AddAsync(favorite, cancellationToken);
+                    await _context.SaveChangesAsync(cancellationToken);
                 }
 
                 return new ArticleEnvelope(await _context.Articles.GetAllData()
-                    .FirstOrDefaultAsync(x => x.ArticleId == article.ArticleId));
+                    .FirstOrDefaultAsync(x => x.ArticleId == article.ArticleId, cancellationToken));
             }
         }
     }

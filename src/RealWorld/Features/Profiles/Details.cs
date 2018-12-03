@@ -1,7 +1,7 @@
-using System.Threading.Tasks;
-using MediatR;
 using FluentValidation;
-using RealWorld.Features.Followers;
+using MediatR;
+using System.Threading;
+using System.Threading.Tasks;
 
 namespace RealWorld.Features.Profiles
 {
@@ -20,7 +20,7 @@ namespace RealWorld.Features.Profiles
             }
         }
 
-        public class QueryHandler : IAsyncRequestHandler<Query, ProfileEnvelope>
+        public class QueryHandler : IRequestHandler<Query, ProfileEnvelope>
         {
             private readonly IProfileReader _profileReader;
 
@@ -29,9 +29,9 @@ namespace RealWorld.Features.Profiles
                 _profileReader = profileReader;
             }
 
-            public async Task<ProfileEnvelope> Handle(Query message)
+            public async Task<ProfileEnvelope> Handle(Query request, CancellationToken cancellationToken)
             {
-                return await _profileReader.ReadProfile(message.Username);
+                return await _profileReader.ReadProfile(request.Username);
             }
         }
     }

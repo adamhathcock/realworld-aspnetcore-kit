@@ -1,15 +1,13 @@
-﻿using System;
-using System.Linq;
-using System.Net;
-using System.Threading.Tasks;
-using AutoMapper;
+﻿using AutoMapper;
 using FluentValidation;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
-using RealWorld.Domain;
 using RealWorld.Infrastructure;
-using RealWorld.Infrastructure.Errors;
 using RealWorld.Infrastructure.Security;
+using System;
+using System.Linq;
+using System.Threading;
+using System.Threading.Tasks;
 
 namespace RealWorld.Features.Users
 {
@@ -41,7 +39,7 @@ namespace RealWorld.Features.Users
             }
         }
 
-        public class Handler : IAsyncRequestHandler<Command, UserEnvelope>
+        public class Handler : IRequestHandler<Command, UserEnvelope>
         {
             private readonly RealWorldContext _db;
             private readonly IPasswordHasher _passwordHasher;
@@ -54,23 +52,23 @@ namespace RealWorld.Features.Users
                 _currentUserAccessor = currentUserAccessor;
             }
 
-            public async Task<UserEnvelope> Handle(Command message)
+            public async Task<UserEnvelope> Handle(Command request, CancellationToken cancellationToken)
             {
                 var currentUsername = _currentUserAccessor.GetCurrentUsername();
                 var person = await _db.Persons.Where(x => x.Username == currentUsername).FirstOrDefaultAsync();
 
-                person.Username = message.User.Username ?? person.Username;
-                person.Email = message.User.Email ?? person.Email;
-                person.Bio = message.User.Bio ?? person.Bio;
-                person.Image = message.User.Image ?? person.Image;
+                person.Username = request.User.Username ?? person.Username;
+                person.Email = request.User.Email ?? person.Email;
+                person.Bio = request.User.Bio ?? person.Bio;
+                person.Image = request.User.Image ?? person.Image;
 
-                if (!string.IsNullOrWhiteSpace(message.User.Password))
+                if (!string.IsNullOrWhiteSpace(request.User.Password))
                 {
                     var salt = Guid.NewGuid().ToByteArray();
-                    person.Hash = _passwordHasher.Hash(message.User.Password, salt);
+                    person.Hash = _passwordHasher.Hash(request.User.Password, salt);
                     person.Salt = salt;
                 }
-                
+
                 await _db.SaveChangesAsync();
 
                 return new UserEnvelope(Mapper.Map<Domain.Person, User>(person));

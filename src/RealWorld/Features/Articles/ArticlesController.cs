@@ -1,10 +1,8 @@
-using System;
-using System.Threading.Tasks;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using RealWorld.Features.Profiles;
 using RealWorld.Infrastructure.Security;
+using System.Threading.Tasks;
 
 namespace RealWorld.Features.Articles
 {
@@ -40,14 +38,14 @@ namespace RealWorld.Features.Articles
         }
 
         [HttpPost]
-        [Authorize(ActiveAuthenticationSchemes = JwtIssuerOptions.Scheme)]
+        [Authorize(AuthenticationSchemes = JwtIssuerOptions.Scheme)]
         public async Task<ArticleEnvelope> Create([FromBody]Create.Command command)
         {
             return await _mediator.Send(command);
         }
 
         [HttpPut("{slug}")]
-        [Authorize(ActiveAuthenticationSchemes = JwtIssuerOptions.Scheme)]
+        [Authorize(AuthenticationSchemes = JwtIssuerOptions.Scheme)]
         public async Task<ArticleEnvelope> Edit(string slug, [FromBody]Edit.Command command)
         {
             command.Slug = slug;
@@ -55,7 +53,7 @@ namespace RealWorld.Features.Articles
         }
 
         [HttpDelete("{slug}")]
-        [Authorize(ActiveAuthenticationSchemes = JwtIssuerOptions.Scheme)]
+        [Authorize(AuthenticationSchemes = JwtIssuerOptions.Scheme)]
         public async Task Delete(string slug)
         {
             await _mediator.Send(new Delete.Command(slug));

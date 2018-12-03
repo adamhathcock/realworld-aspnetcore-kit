@@ -1,10 +1,10 @@
-﻿using System;
-using System.IO;
-using System.Threading.Tasks;
-using MediatR;
+﻿using MediatR;
 using Microsoft.Extensions.DependencyInjection;
 using RealWorld;
 using RealWorld.Infrastructure;
+using System;
+using System.IO;
+using System.Threading.Tasks;
 
 namespace Realworld.IntegrationTests
 {

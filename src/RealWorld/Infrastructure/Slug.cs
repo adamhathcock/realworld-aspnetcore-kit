@@ -1,5 +1,4 @@
-﻿using System;
-using System.Globalization;
+﻿using System.Globalization;
 using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
@@ -12,7 +11,7 @@ namespace RealWorld.Infrastructure
     {
         public static string GenerateSlug(this string phrase)
         {
-            string str = phrase.RemoveDiacritics().ToLower();
+            var str = phrase.RemoveDiacritics().ToLower();
             // invalid chars           
             str = Regex.Replace(str, @"[^a-z0-9\s-]", "");
             // convert multiple spaces into one space   

@@ -1,8 +1,8 @@
-using System.Threading.Tasks;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using RealWorld.Infrastructure.Security;
+using System.Threading.Tasks;
 
 namespace RealWorld.Features.Comments
 {
@@ -17,7 +17,7 @@ namespace RealWorld.Features.Comments
         }
 
         [HttpPost("{slug}/comments")]
-        [Authorize(ActiveAuthenticationSchemes = JwtIssuerOptions.Scheme)]
+        [Authorize(AuthenticationSchemes = JwtIssuerOptions.Scheme)]
         public async Task<CommentEnvelope> Create(string slug, [FromBody]Create.Command command)
         {
             command.Slug = slug;
@@ -31,7 +31,7 @@ namespace RealWorld.Features.Comments
         }
 
         [HttpDelete("{slug}/comments/{id}")]
-        [Authorize(ActiveAuthenticationSchemes = JwtIssuerOptions.Scheme)]
+        [Authorize(AuthenticationSchemes = JwtIssuerOptions.Scheme)]
         public async Task Delete(string slug, int id)
         {
             await _mediator.Send(new Delete.Command(slug, id));

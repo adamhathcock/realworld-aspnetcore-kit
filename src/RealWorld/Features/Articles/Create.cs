@@ -1,12 +1,13 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
-using FluentValidation;
+﻿using FluentValidation;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
 using RealWorld.Domain;
 using RealWorld.Infrastructure;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Threading;
+using System.Threading.Tasks;
 
 namespace RealWorld.Features.Articles
 {
@@ -46,10 +47,10 @@ namespace RealWorld.Features.Articles
             }
         }
 
-        public class Handler : IAsyncRequestHandler<Command, ArticleEnvelope>
+        public class Handler : IRequestHandler<Command, ArticleEnvelope>
         {
-            private readonly RealWorldContext _db;
             private readonly ICurrentUserAccessor _currentUserAccessor;
+            private readonly RealWorldContext _db;
 
             public Handler(RealWorldContext db, ICurrentUserAccessor currentUserAccessor)
             {
@@ -57,27 +58,29 @@ namespace RealWorld.Features.Articles
                 _currentUserAccessor = currentUserAccessor;
             }
 
-            public async Task<ArticleEnvelope> Handle(Command message)
+            public async Task<ArticleEnvelope> Handle(Command message, CancellationToken cancellationToken)
             {
-                var author = await _db.Persons.FirstAsync(x => x.Username == _currentUserAccessor.GetCurrentUsername());
+                var author = await _db.Persons.FirstAsync(x => x.Username == _currentUserAccessor.GetCurrentUsername(),
+                    cancellationToken);
                 var tags = new List<Tag>();
-                foreach(var tag in (message.Article.TagList ?? Enumerable.Empty<string>()))
+                foreach (var tag in message.Article.TagList ?? Enumerable.Empty<string>())
                 {
                     var t = await _db.Tags.FindAsync(tag);
                     if (t == null)
                     {
-                        t = new Tag()
+                        t = new Tag
                         {
                             TagId = tag
                         };
-                        await _db.Tags.AddAsync(t);
+                        await _db.Tags.AddAsync(t, cancellationToken);
                         //save immediately for reuse
-                        await _db.SaveChangesAsync();
+                        await _db.SaveChangesAsync(cancellationToken);
                     }
+
                     tags.Add(t);
                 }
 
-                var article = new Article()
+                var article = new Article
                 {
                     Author = author,
                     Body = message.Article.Body,
@@ -87,15 +90,15 @@ namespace RealWorld.Features.Articles
                     Title = message.Article.Title,
                     Slug = message.Article.Title.GenerateSlug()
                 };
-                await _db.Articles.AddAsync(article);
+                await _db.Articles.AddAsync(article, cancellationToken);
 
-                await _db.ArticleTags.AddRangeAsync(tags.Select(x => new ArticleTag()
+                await _db.ArticleTags.AddRangeAsync(tags.Select(x => new ArticleTag
                 {
                     Article = article,
                     Tag = x
-                }));
+                }), cancellationToken);
 
-                await _db.SaveChangesAsync();
+                await _db.SaveChangesAsync(cancellationToken);
 
                 return new ArticleEnvelope(article);
             }
